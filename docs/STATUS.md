@@ -68,7 +68,8 @@ headset.
 | Camera motion blur off (`DisableMotionBlur`) | Default | Code only | It also unticks the option in the game's own settings, and it stays off afterwards. |
 | Player body (torso and legs) hidden; only the arms are drawn | Default | Validated (Q3) | Always on in VR. |
 | Sword swing trail hidden | Default | Mock | Recognised by three vertex shaders, only around the player's own Slash. |
-| Game's own 2D HUD | Unchanged | - | Stays in the corners of the picture, which are hard to see in a headset. The wrist HUD (2.9) replaces it. |
+| Game's own 2D HUD | Stereo patch: one finite-depth panel (`StereoHud`, `StereoHudWidth`) | Code only | In stereo, captured once and submitted on a head-locked quad 2.4 m ahead; the same image goes to both eyes. Width defaults to 60 degrees (35-90). The captured texture is transparent where the game draws no HUD; its notifications keep their own fade timing. Crosshair and markers stay 2D projections on that panel, not world-anchored. `StereoHud = 0` restores the original per-eye screen-space draw. Hardware verification remains pending. |
+| Left-hand aim point | Red point (`AimDot`) | Code only | Projects the left controller's gun/pointer ray into the current eye; uses the weapon hit, pick target, or active power landing point when available, otherwise a configurable-range point. Hardware verification remains pending. |
 
 ### 2.2 Head tracking and the turning servo
 
@@ -275,7 +276,7 @@ Only what is current. Items that later work fixed have been dropped.
 - Shutting down at process exit still calls OpenXR under the loader lock. It has always worked on Meta and SteamVR.
 
 ### Picture
-- **The game's own HUD stays in the picture's corners** (hard to see). The wrist HUD shows health, mana and the item.
+- **The stereo HUD panel is not yet verified on a headset.** It uses the same captured game-UI texture as the wheel and wrist layer, at 2.4 m and 60 degrees wide by default (configurable from 35 to 90). Markers are not attached to their 3D targets. `StereoHud = 0` returns the UI to the per-eye image. The wrist HUD continues to show health, mana and the item.
   While the watch is on, the game's HUD option is forced to "always" in memory.
 - **Stereo 3D is experimental**: alternating eyes judder at low frame rates. Moving entities keep a residual of about
   0.3 px (peaks 2-4 px) that mono does not have. Two cvar bugs: switching `vr stereotaa` from 0 back to 1 restores a
@@ -391,3 +392,4 @@ beta until it has been played on more headsets and runtimes.
   menu button, OpenXR 1.0 requested.
 - Known in this version and fixed in 0.2.0: blurry, "zoomed-in" picture; menus filling the whole view and following
   the head; cutscenes not following the head.
+

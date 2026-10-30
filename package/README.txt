@@ -154,6 +154,9 @@ Support the development: patreon.com/CosmicTangerine  -  ko-fi.com/cosmictangeri
  With Reticle = 1 in DishonoredVR.ini (off in this build), two lines show where each hand points:
  the RIGHT one is what the right grip takes or uses, the LEFT one is where a power or shot goes,
  with a ring where it will land.
+ The red left-hand aim dot is controlled separately: [Display] AimDot = 1 (0 to turn it off).
+ It follows the gun ray, a picked object, an active power landing point, or the left hand's aim direction.
+ StereoHudWidth (35 - 90 degrees, default 60) controls how wide the stereo HUD appears; lower values bring edge notifications inward.
 
  IN MENUS
    Sticks: move   A: select   B or menu: back   Grips: next tab   Triggers: previous / next sub-tab
@@ -189,6 +192,7 @@ Support the development: patreon.com/CosmicTangerine  -  ko-fi.com/cosmictangeri
                FocusGameWindow = 1 (the game is brought back to the front when you use the controllers)
    [Gameplay]  SwordGestures = 1   ThrowGestures = 1   GrabObjects = 1
    [Display]   Reticle = 0 (1 = the two pointing lines) WristHud = 1  WristHudSize = 8.5 (cm)
+               StereoHud = 1 (stereo: one fused HUD panel 2.4 m ahead; 0 = game screen-space HUD)
                DisableMetaASW = 1 (Link / Air Link: Meta's ASW off for this game, see section 7)
                DisableMotionBlur = 1   Stereo3D = 1 (real depth, each eye drawn at the same instant,
                                  about half the frame rate; 0 = flat, both eyes the same
@@ -293,3 +297,4 @@ Support the development: patreon.com/CosmicTangerine  -  ko-fi.com/cosmictangeri
 ------------------------------------------------------------------------------------------------
  Third-party software in this mod: see THIRD-PARTY-NOTICES.txt.
 ------------------------------------------------------------------------------------------------
+

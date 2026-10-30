@@ -16,6 +16,7 @@
 namespace
 {
     std::atomic<int> g_Mode{ 0 };
+    std::atomic<bool> g_AimDot{ false };
     std::atomic<float> g_Range{ 8.f };
     std::atomic<int> g_Axes{ 0 };
     std::mutex g_M; Reticle::Stats g_Stats;
@@ -127,6 +128,58 @@ namespace
         st.drawn++;
     }
 
+    //! A compact aiming point for the left controller. It is projected from a world target separately into each
+    //! rendered eye, so unlike the game's flat crosshair it keeps the correct stereo disparity.
+    void DrawAimDot(ImDrawList* dl, const ImVec2& size)
+    {
+        constexpr int h = 0; // left controller: weapons, powers, grenade throw-preview and the configured grab hand
+        float org[3], fwd[3];
+        const bool pointer = h == GrabHand::Hand() && GrabHand::Enabled() && PointerRay::Mode() > 0
+            && PointerRay::Get(h, org, fwd);
+        const bool gun = !pointer && h == HandAimHook::GunHand() && GunRay::DrawnRay(h, org, fwd);
+        if (!pointer && !gun && !GpuTrace::HandRay(h, org, fwd)) return;
+        if (!Finite3(org) || !Finite3(fwd)) return;
+
+        float end[3];
+        bool target = false;
+        float point[3];
+        if (gun)
+        {
+            float t = g_Range.load(); bool hit = false;
+            if (GunRay::SensorHit(t, hit)) target = hit;
+            for (int i = 0; i < 3; i++) end[i] = org[i] + fwd[i] * t;
+        }
+        else if (pointer && !GrabHand::HeldEntity() && GrabHand::HandHasTarget()
+            && GrabHand::TargetPoint(point) && Finite3(point))
+        {
+            memcpy(end, point, sizeof end);
+            target = true;
+        }
+        else
+        {
+            const HandAimHook::Stats hs = HandAimHook::GetStats();
+            if (h == (HandAimHook::PowerHand() & 1) && hs.powerActive && Finite3(hs.powerEnd)
+                && (hs.powerEnd[0] || hs.powerEnd[1] || hs.powerEnd[2]))
+            {
+                memcpy(end, hs.powerEnd, sizeof end);
+                target = true;
+            }
+            else
+            {
+                const float range = pointer && GrabHand::PickRange() > 0.f ? GrabHand::PickRange() : g_Range.load();
+                for (int i = 0; i < 3; i++) end[i] = org[i] + fwd[i] * range;
+            }
+        }
+
+        float ndc[2];
+        if (!GpuTrace::ProjectWorld(end, ndc)) return;
+        const ImVec2 c = ToScreen(ndc, size);
+        // Dark outline keeps the red centre visible over bright and dark scenes; the halo marks an engine target.
+        if (target) dl->AddCircleFilled(c, 8.0f, IM_COL32(255, 30, 30, 70), 16);
+        dl->AddCircleFilled(c, 5.5f, IM_COL32(0, 0, 0, 230), 16);
+        dl->AddCircleFilled(c, 3.5f, IM_COL32(255, 25, 25, 255), 16);
+    }
+
     //! A world segment from `org` along `dir`, drawn if both ends project. Short lines are straight enough in
     //! screen space that two points are all it takes.
     void Seg(ImDrawList* dl, const ImVec2& size, const float org[3], const float dir[3], float len, ImU32 col, float w, bool dot)
@@ -226,7 +279,8 @@ namespace
 void Reticle::Draw()
 {
     const int mode = g_Mode.load();
-    if (!mode && !g_Axes.load()) return;
+    const bool aimDot = g_AimDot.load();
+    if (!mode && !g_Axes.load() && !aimDot) return;
     // Not over a menu. The reticle is aimed at the world, and while a menu is up there is nothing to aim at --
     // it was drawn straight across the main menu before this check.
     if (KbmInject::GetStats().menuSafe) return;
@@ -240,6 +294,7 @@ void Reticle::Draw()
     // stereo the two eyes' projections differ (CameraHook::ApplyEyeProjection)
     struct ProjScope { ProjScope() { GpuTrace::ProjectForSerial(VRRuntime::PresentingSerial()); } ~ProjScope() { GpuTrace::ProjectForSerial(0); } } projScope;
     Stats st; st.frames = 1;
+    if (aimDot) DrawAimDot(dl, size);
     if (mode == 1 || mode == 2) DrawHand(HandAimHook::PowerHand() & 1, dl, size, st);
     if (mode == 1 || mode == 3)
     {
@@ -269,6 +324,8 @@ void Reticle::Draw()
 }
 
 void Reticle::SetMode(int m) { g_Mode = m; }
+void Reticle::SetAimDot(bool on) { g_AimDot = on; }
+bool Reticle::AimDot() { return g_AimDot.load(); }
 void Reticle::AddMark(const float* w) { std::lock_guard lk(g_M); if (g_Marks.size() < 32) g_Marks.push_back({ w[0], w[1], w[2] }); }
 void Reticle::ClearMarks() { std::lock_guard lk(g_M); g_Marks.clear(); }
 void Reticle::SetAxes(int on) { g_Axes = on; }
@@ -277,3 +334,4 @@ int  Reticle::Mode() { return g_Mode.load(); }
 void Reticle::SetRange(float m) { if (m > 0.1f && m < 500.f) g_Range = m; }
 float Reticle::Range() { return g_Range.load(); }
 Reticle::Stats Reticle::GetStats() { std::lock_guard lk(g_M); return g_Stats; }
+

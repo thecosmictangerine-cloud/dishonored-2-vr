@@ -7,6 +7,7 @@
 #include "CVars.h"
 #include "Settings.h"
 #include "ScreenMode.h"
+#include "VRRuntime.h"
 #include <algorithm>
 #include <cmath>
 #include <d3d11.h>
@@ -557,7 +558,10 @@ void WristHud::OnXrFrame(XRSession& xr, bool inMenu)
     g_LastXrFrame = GetTickCount64();
     const bool on = g_WristOn.load() != 0 && g_Capture.load();
     const bool running = xr.IsSessionRunning();
-    g_Wanted = on && running;
+    // In stereo the game HUD is lifted out of each eye's screen-space image and submitted by ScreenMode as one
+    // finite-depth quad. Keep capturing it even when the wrist watch itself is disabled.
+    const bool stereoOverlay = Settings::StereoHud() && VRRuntime::Stereo() && !inMenu && ScreenMode::Mode() != 0;
+    g_Wanted = (on || stereoOverlay) && running;
     ForceHud(on && running && g_W.forceHud);
 
     int why = 0;
@@ -689,3 +693,4 @@ std::string WristHud::WatchStatus()
                        g_WristOn.load(), g_Shown ? 1 : 0, g_Alpha, kWhy[g_WS.why], g_WS.facing, g_WS.gaze, g_WS.dist, g_WS.frames,
                        g_WS.shown, g_WS.submitted, g_UserHud, drawn, -g_W.back, g_W.side, g_W.along);
 }
+

@@ -1125,6 +1125,7 @@ namespace
             // 0 off, 1 both hands, 2 the power hand only, 3 the gun hand only; reticlerange = where the ring sits
             // along the ray when the engine has not computed a landing point (metres).
             else if (what == "reticle") { int m = 1; ss >> m; Reticle::SetMode(m); LOGI("cmd vr reticle {}", m); }
+            else if (what == "aimdot") { int m = 1; ss >> m; Reticle::SetAimDot(m != 0); LOGI("cmd vr aimdot {}", m); }
             else if (what == "handaxes") { int m = 1; ss >> m; Reticle::SetAxes(m); LOGI("cmd vr handaxes {}", m); }
             else if (what == "reticlerange") { float r = 8.f; ss >> r; Reticle::SetRange(r); LOGI("cmd vr reticlerange {}", Reticle::Range()); }
             else if (what == "projany") { int m = 1; ss >> m; GpuTrace::SetProjAny(m); }
@@ -1357,3 +1358,4 @@ void Commands::OnPresent()
     }
     if (now.QuadPart - g_LastBeat.QuadPart >= fq.QuadPart) { g_LastBeat = now; if (Settings::StatusFile()) Heartbeat(); }
 }
+

@@ -228,7 +228,9 @@ bool ScreenMode::OnXrFrame(XRSession& xr, ID3D11Texture2D* bb, bool imageFlat, b
     ID3D11ShaderResourceView* wsrv = WristHud::Texture(wtw, wth, &wgamma);
     g_Flat = g_Kind == kScreen;
     g_Wheel = g_Kind == kWheel;
-    g_Lift = g_Kind == kWheel && g_C.wheel != 0 && wsrv && wtw && wth;
+    const bool stereoHud = Settings::StereoHud() && VRRuntime::Stereo() && g_Mode.load() != 0 &&
+                           g_Kind == kPlay && head && wsrv && wtw && wth;
+    g_Lift = (g_Kind == kWheel && g_C.wheel != 0 && wsrv && wtw && wth) || stereoHud;
 
     // ---- what this frame shows ----
     // A picture rendered flat is shown on the screen even once play has resumed (the pipeline is deeper than one
@@ -320,7 +322,26 @@ bool ScreenMode::OnXrFrame(XRSession& xr, ID3D11Texture2D* bb, bool imageFlat, b
     }
     g_LastGame = now;
     if (g_C.fadeOut > 0.f && now - g_GameSince < g_C.fadeOut) xr.SetFrameFade(g_ExitFrom + (1.f - g_ExitFrom) * Ease((float)((now - g_GameSince) / g_C.fadeOut)));
-    if (g_Lift.load() && head)
+    if (stereoHud)
+    {   // The game's 2D HUD has no useful disparity when drawn into each eye's screen space. Lift it from the backbuffer
+        // and submit the same captured image on a finite-depth quad: both eyes see one fused HUD plane in front of the
+        // world. Markers remain screen-projected by the game, but no longer sit at infinity.
+        constexpr float kHudDist = 2.4f;
+        const float kHudWidthDeg = Settings::StereoHudWidth();
+        const Place at = Ahead(hp, hq, kHudDist, -30.f, 15.f);
+        float c[3]; Centre(at, c);
+        XRPanelLayer l;
+        l.srv = wsrv; l.srcW = wtw; l.srcH = wth;
+        l.crop[0] = 0.f; l.crop[1] = 0.f; l.crop[2] = (float)wtw; l.crop[3] = (float)wth;
+        l.premultiplied = true; l.gamma = wgamma; l.alpha = 1.f;
+        const float aspect = (float)wtw / (float)wth;
+        l.width = 2.f * kHudDist * tanf(kHudWidthDeg * 0.5f * kD2R); l.height = l.width / aspect;
+        Quat(at.yaw, at.pitch, l.quat); memcpy(l.pos, c, 12);
+        l.outW = (unsigned)std::clamp(std::min((float)wtw, kHudWidthDeg * g_C.density), 256.f, 4096.f);
+        l.outH = (unsigned)std::clamp(l.outW / aspect, 144.f, 4096.f);
+        xr.SetPanelLayer(1, l);
+    }
+    else if (g_Lift.load() && head)
     {   // the wheel: the game's interface on a panel where it was opened
         if (!g_WheelAt.valid) g_WheelAt = Ahead(hp, hq, g_C.wheelDist, g_C.wheelPitchMin, g_C.wheelPitchMax);
         g_WheelAlpha = g_C.wheelFade > 0.f ? std::min(1.f, g_WheelAlpha + dt / g_C.wheelFade) : 1.f;
@@ -405,3 +426,4 @@ std::string ScreenMode::Status()
                        g_Cur.yaw * kR2D, g_Cur.pitch * kR2D, g_Cur.d, c[0], c[1], c[2], g_GlideT >= 0.f ? 1 : 0, g_S.recenters, g_S.follows,
                        g_S.freezes, g_S.noFreeze, g_S.snapDropped, g_SnapFade, g_S.expects, g_S.expectMissed, g_S.wheels, g_S.wheelPanels, g_WheelAlpha, g_WheelAt.yaw * kR2D, g_WheelAt.pitch * kR2D);
 }
+

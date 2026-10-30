@@ -13,7 +13,10 @@ namespace Settings
     bool StatusFile();                            //!< write DVR_heartbeat.txt once a second (diagnostics)
     bool LogInput();                              //!< log every controller button change (diagnostics)
     bool Haptics();                               //!< controller vibration
+    bool StereoHud();                             //!< put the game's 2D HUD on a finite-depth quad in stereo
+    float StereoHudWidth();                       //!< apparent width of the stereo HUD quad, degrees (35 - 90)
     float RenderScale();                          //!< the game's render size relative to the headset's pixel density (0 = the window's)
     float ControllerPitchOffset();                //!< degrees the controllers' pointing is tilted (+ = up)
     std::string Summary();                        //!< one line for the log
 }
+

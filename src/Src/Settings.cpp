@@ -31,8 +31,11 @@ namespace
         { "gameplay.throwgestures",     Kind::Bool,   "1", 0, 0, nullptr },
         { "gameplay.grabobjects",       Kind::Bool,   "1", 0, 0, nullptr },
         { "display.reticle",            Kind::Bool,   "1", 0, 0, nullptr },
+        { "display.aimdot",             Kind::Bool,   "1", 0, 0, nullptr },
         { "display.wristhud",           Kind::Bool,   "1", 0, 0, nullptr },
         { "display.wristhudsize",       Kind::Float,  "8.5", 4, 15, nullptr },
+        { "display.stereohud",          Kind::Bool,   "1", 0, 0, nullptr },
+        { "display.stereohudwidth",     Kind::Float,  "60", 35, 90, nullptr },
         // 0 mono, 1 synchronised stereo, 2 the alternating stereo of 1.0 (whose ini had 1 / true for that one: it gets
         // the synchronised one now, which is what 1 meant to the player)
         { "display.stereo3d",           Kind::Choice, "1", 0, 0, "0|1|2|true|false|on|off|yes|no" },
@@ -176,6 +179,7 @@ std::vector<std::string> Settings::PackageCommands()
     c.push_back(B("gameplay.throwgestures") ? "vr throw 1" : "vr throw 0");
     c.push_back(B("gameplay.grabobjects") ? "vr grab 1" : "vr grab 0");
     c.push_back(B("display.reticle") ? "vr reticle 1" : "vr reticle 0");
+    c.push_back(B("display.aimdot") ? "vr aimdot 1" : "vr aimdot 0");
     c.push_back(B("display.wristhud") ? "vr wristhud 1" : "vr wristhud 0");
     c.push_back(fmt::format("vr wristcfg size {}", F("display.wristhudsize") / 100.f));   // cm in the file, m in the command
     {
@@ -200,6 +204,8 @@ std::vector<std::string> Settings::PackageCommands()
 bool Settings::StatusFile() { return B("advanced.writestatusfile"); }
 bool Settings::LogInput() { return B("advanced.logcontrollerinput"); }
 bool Settings::Haptics() { return B("controls.haptics"); }
+bool Settings::StereoHud() { return B("display.stereohud"); }
+float Settings::StereoHudWidth() { return F("display.stereohudwidth"); }
 float Settings::RenderScale() { return F("display.renderscale"); }
 float Settings::ControllerPitchOffset() { return F("controls.controllerpitchoffset"); }
 
@@ -209,3 +215,4 @@ std::string Settings::Summary()
     for (const Key& k : kKeys) s += fmt::format(" {}={}", strchr(k.name, '.') + 1, g_Val[k.name]);
     return s;
 }
+

@@ -16,6 +16,9 @@ namespace Reticle
 {
     //! 0 = off, 1 = both hands, 2 = the power hand only, 3 = the gun hand only.
     void SetMode(int mode);
+    //! A small red aiming point for the left controller, independently of the debug rays/rings.
+    void SetAimDot(bool on);
+    bool AimDot();
     void AddMark(const float* world);            //!< research: a world point drawn as a cross (`vr reticlemark x y z`)
     void ClearMarks();
     int  Mode();
@@ -29,3 +32,4 @@ namespace Reticle
     struct Stats { unsigned long long frames = 0, drawn = 0; int handValid = 0, projValid = 0, engineTarget = 0; };
     Stats GetStats();
 }
+
